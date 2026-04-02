@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Structural Determinism Probe - Results Visualization</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0e27;
+            color: #e0e6ed;
+            padding: 30px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.2em;
+            color: #4fc3f7;
+        }
+        .subtitle {
+            text-align: center;
+            margin-bottom: 40px;
+            color: #90a4ae;
+            font-size: 1.1em;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        .panel {
+            background: #1a1f3a;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        }
+        .panel h2 {
+            margin-bottom: 20px;
+            font-size: 1.4em;
+            color: #4fc3f7;
+            border-bottom: 2px solid #2a3f5f;
+            padding-bottom: 10px;
+        }
+        .full-width {
+            grid-column: 1 / -1;
+        }
+        .legend {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #2a3f5f;
+        }
+        .metric:last-child {
+            border-bottom: none;
+        }
+        .metric-value {
+            font-weight: bold;
+            color: #4fc3f7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Structural Determinism Probe</h1>
+        <div class="subtitle">Results Visualization - Day 366, April 2, 2026</div>
+        
+        <div class="grid">
+            <div class="panel">
+                <h2>TFPA Distribution</h2>
+                <svg id="tfpa-chart" width="100%" height="300"></svg>
+                <div class="legend" id="family-legend"></div>
+            </div>
+            
+            <div class="panel">
+                <h2>4-Level Rubric Scores</h2>
+                <svg id="rubric-chart" width="100%" height="300"></svg>
+            </div>
+            
+            <div class="panel full-width">
+                <h2>Lexical Clustering - Novel Coinages</h2>
+                <svg id="coinage-chart" width="100%" height="350"></svg>
+            </div>
+            
+            <div class="panel">
+                <h2>Key Metrics</h2>
+                <div class="metric">
+                    <span>Mean TFPA</span>
+                    <span class="metric-value">40.8s</span>
+                </div>
+                <div class="metric">
+                    <span>TFPA Range</span>
+                    <span class="metric-value">38-45s (7s spread)</span>
+                </div>
+                <div class="metric">
+                    <span>Structural Convergence</span>
+                    <span class="metric-value">6/6 (100%)</span>
+                </div>
+                <div class="metric">
+                    <span>"Drift" Cluster</span>
+                    <span class="metric-value">3/6 (50%)</span>
+                </div>
+                <div class="metric">
+                    <span>Prohibition Violations</span>
+                    <span class="metric-value">0/6 (0%)</span>
+                </div>
+                <div class="metric">
+                    <span>Classification</span>
+                    <span class="metric-value">Mixed-Hybrid</span>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h2>Domain Assignments</h2>
+                <div class="metric">
+                    <span>Claude Opus 4.5</span>
+                    <span class="metric-value">Theatrical</span>
+                </div>
+                <div class="metric">
+                    <span>DeepSeek-V3.2</span>
+                    <span class="metric-value">Meteorology</span>
+                </div>
+                <div class="metric">
+                    <span>GPT-5.1</span>
+                    <span class="metric-value">Legal</span>
+                </div>
+                <div class="metric">
+                    <span>Claude Sonnet 4.5</span>
+                    <span class="metric-value">Music</span>
+                </div>
+                <div class="metric">
+                    <span>GPT-5.2</span>
+                    <span class="metric-value">Culinary</span>
+                </div>
+                <div class="metric">
+                    <span>Claude Haiku 4.5</span>
+                    <span class="metric-value">Astronomy</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data
+        const agents = [
+            { name: "Claude Sonnet 4.5", family: "Claude", tfpa: 38, domain: "Music", coinage: "Rehearsal-drift sense", hasDrift: true },
+            { name: "GPT-5.1", family: "GPT", tfpa: 40, domain: "Legal", coinage: "chambers-current", hasDrift: false },
+            { name: "GPT-5.2", family: "GPT", tfpa: 40, domain: "Culinary", coinage: "pan-whisper", hasDrift: false },
+            { name: "Claude Haiku 4.5", family: "Claude", tfpa: 40, domain: "Astronomy", coinage: "tidal-stretch echo", hasDrift: false },
+            { name: "DeepSeek-V3.2", family: "DeepSeek", tfpa: 42, domain: "Meteorology", coinage: "gradient-drift intuition", hasDrift: true },
+            { name: "Claude Opus 4.5", family: "Claude", tfpa: 45, domain: "Theatrical", coinage: "green-room-drift", hasDrift: true }
+        ];
+
+        const rubricLevels = [
+            { level: "L1: Structural", score: 6, total: 6 },
+            { level: "L2: Surface", score: 6, total: 6 },
+            { level: "L3: Coinage", score: 6, total: 6 },
+            { level: "L4: Violations", score: 6, total: 6 }
+        ];
+
+        // Color scheme
+        const familyColors = {
+            "Claude": "#ff6b6b",
+            "GPT": "#4ecdc4",
+            "DeepSeek": "#ffe66d"
+        };
+
+        // TFPA Chart
+        const tfpaWidth = document.getElementById('tfpa-chart').clientWidth;
+        const tfpaHeight = 300;
+        const tfpaMargin = { top: 20, right: 20, bottom: 60, left: 60 };
+        
+        const tfpaSvg = d3.select("#tfpa-chart")
+            .attr("width", tfpaWidth)
+            .attr("height", tfpaHeight);
+
+        const tfpaX = d3.scaleBand()
+            .domain(agents.map(d => d.name.split(' ')[0] + (d.name.includes('4.5') ? ' 4.5' : ' 4.6')))
+            .range([tfpaMargin.left, tfpaWidth - tfpaMargin.right])
+            .padding(0.3);
+
+        const tfpaY = d3.scaleLinear()
+            .domain([0, 50])
+            .range([tfpaHeight - tfpaMargin.bottom, tfpaMargin.top]);
+
+        // TFPA bars
+        tfpaSvg.selectAll(".bar")
+            .data(agents)
+            .join("rect")
+            .attr("class", "bar")
+            .attr("x", d => tfpaX(d.name.split(' ')[0] + (d.name.includes('4.5') ? ' 4.5' : ' 4.6')))
+            .attr("y", d => tfpaY(d.tfpa))
+            .attr("width", tfpaX.bandwidth())
+            .attr("height", d => tfpaY(0) - tfpaY(d.tfpa))
+            .attr("fill", d => familyColors[d.family])
+            .attr("opacity", 0.8);
+
+        // TFPA axes
+        tfpaSvg.append("g")
+            .attr("transform", `translate(0,${tfpaHeight - tfpaMargin.bottom})`)
+            .call(d3.axisBottom(tfpaX))
+            .selectAll("text")
+            .attr("transform", "rotate(-45)")
+            .style("text-anchor", "end")
+            .attr("fill", "#e0e6ed");
+
+        tfpaSvg.append("g")
+            .attr("transform", `translate(${tfpaMargin.left},0)`)
+            .call(d3.axisLeft(tfpaY))
+            .selectAll("text")
+            .attr("fill", "#e0e6ed");
+
+        tfpaSvg.append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 15)
+            .attr("x", -(tfpaHeight / 2))
+            .attr("fill", "#90a4ae")
+            .style("text-anchor", "middle")
+            .text("TFPA (seconds)");
+
+        // Mean line
+        tfpaSvg.append("line")
+            .attr("x1", tfpaMargin.left)
+            .attr("x2", tfpaWidth - tfpaMargin.right)
+            .attr("y1", tfpaY(40.8))
+            .attr("y2", tfpaY(40.8))
+            .attr("stroke", "#4fc3f7")
+            .attr("stroke-width", 2)
+            .attr("stroke-dasharray", "5,5");
+
+        tfpaSvg.append("text")
+            .attr("x", tfpaWidth - tfpaMargin.right - 10)
+            .attr("y", tfpaY(40.8) - 5)
+            .attr("fill", "#4fc3f7")
+            .attr("text-anchor", "end")
+            .text("Mean: 40.8s");
+
+        // Family legend
+        const legendHtml = Object.entries(familyColors).map(([family, color]) => 
+            `<div class="legend-item">
+                <div class="legend-color" style="background: ${color};"></div>
+                <span>${family}</span>
+            </div>`
+        ).join('');
+        document.getElementById('family-legend').innerHTML = legendHtml;
+
+        // Rubric Chart
+        const rubricWidth = document.getElementById('rubric-chart').clientWidth;
+        const rubricHeight = 300;
+        const rubricMargin = { top: 20, right: 20, bottom: 60, left: 150 };
+
+        const rubricSvg = d3.select("#rubric-chart")
+            .attr("width", rubricWidth)
+            .attr("height", rubricHeight);
+
+        const rubricY = d3.scaleBand()
+            .domain(rubricLevels.map(d => d.level))
+            .range([rubricMargin.top, rubricHeight - rubricMargin.bottom])
+            .padding(0.2);
+
+        const rubricX = d3.scaleLinear()
+            .domain([0, 6])
+            .range([rubricMargin.left, rubricWidth - rubricMargin.right]);
+
+        // Rubric bars
+        rubricSvg.selectAll(".rubric-bar")
+            .data(rubricLevels)
+            .join("rect")
+            .attr("class", "rubric-bar")
+            .attr("y", d => rubricY(d.level))
+            .attr("x", rubricMargin.left)
+            .attr("height", rubricY.bandwidth())
+            .attr("width", d => rubricX(d.score) - rubricMargin.left)
+            .attr("fill", "#66bb6a")
+            .attr("opacity", 0.8);
+
+        // Rubric axes
+        rubricSvg.append("g")
+            .attr("transform", `translate(${rubricMargin.left},0)`)
+            .call(d3.axisLeft(rubricY))
+            .selectAll("text")
+            .attr("fill", "#e0e6ed");
+
+        rubricSvg.append("g")
+            .attr("transform", `translate(0,${rubricHeight - rubricMargin.bottom})`)
+            .call(d3.axisBottom(rubricX).ticks(6))
+            .selectAll("text")
+            .attr("fill", "#e0e6ed");
+
+        rubricSvg.append("text")
+            .attr("x", rubricWidth / 2)
+            .attr("y", rubricHeight - 20)
+            .attr("fill", "#90a4ae")
+            .style("text-anchor", "middle")
+            .text("Agents Converging (out of 6)");
+
+        // Coinage Chart
+        const coinageWidth = document.getElementById('coinage-chart').clientWidth;
+        const coinageHeight = 350;
+        const coinageMargin = { top: 20, right: 20, bottom: 80, left: 60 };
+
+        const coinageSvg = d3.select("#coinage-chart")
+            .attr("width", coinageWidth)
+            .attr("height", coinageHeight);
+
+        const coinageX = d3.scaleBand()
+            .domain(agents.map(d => d.name.split(' ')[0] + ' ' + d.name.split(' ')[1]))
+            .range([coinageMargin.left, coinageWidth - coinageMargin.right])
+            .padding(0.3);
+
+        const coinageY = d3.scaleLinear()
+            .domain([0, 1])
+            .range([coinageHeight - coinageMargin.bottom, coinageMargin.top]);
+
+        // Coinage bars (drift vs non-drift)
+        coinageSvg.selectAll(".coinage-bar")
+            .data(agents)
+            .join("rect")
+            .attr("class", "coinage-bar")
+            .attr("x", d => coinageX(d.name.split(' ')[0] + ' ' + d.name.split(' ')[1]))
+            .attr("y", d => coinageY(1))
+            .attr("width", coinageX.bandwidth())
+            .attr("height", d => coinageY(0) - coinageY(1))
+            .attr("fill", d => d.hasDrift ? "#ff9800" : "#78909c")
+            .attr("opacity", 0.8);
+
+        // Coinage labels
+        coinageSvg.selectAll(".coinage-label")
+            .data(agents)
+            .join("text")
+            .attr("class", "coinage-label")
+            .attr("x", d => coinageX(d.name.split(' ')[0] + ' ' + d.name.split(' ')[1]) + coinageX.bandwidth() / 2)
+            .attr("y", coinageY(0.5))
+            .attr("text-anchor", "middle")
+            .attr("fill", "#fff")
+            .attr("font-size", "11px")
+            .text(d => d.coinage);
+
+        // Coinage axes
+        coinageSvg.append("g")
+            .attr("transform", `translate(0,${coinageHeight - coinageMargin.bottom})`)
+            .call(d3.axisBottom(coinageX))
+            .selectAll("text")
+            .attr("transform", "rotate(-45)")
+            .style("text-anchor", "end")
+            .attr("fill", "#e0e6ed");
+
+        // Coinage legend
+        coinageSvg.append("rect")
+            .attr("x", coinageMargin.left + 20)
+            .attr("y", 30)
+            .attr("width", 20)
+            .attr("height", 20)
+            .attr("fill", "#ff9800")
+            .attr("opacity", 0.8);
+
+        coinageSvg.append("text")
+            .attr("x", coinageMargin.left + 50)
+            .attr("y", 45)
+            .attr("fill", "#e0e6ed")
+            .text("Contains 'drift' (3/6)");
+
+        coinageSvg.append("rect")
+            .attr("x", coinageMargin.left + 220)
+            .attr("y", 30)
+            .attr("width", 20)
+            .attr("height", 20)
+            .attr("fill", "#78909c")
+            .attr("opacity", 0.8);
+
+        coinageSvg.append("text")
+            .attr("x", coinageMargin.left + 250)
+            .attr("y", 45)
+            .attr("fill", "#e0e6ed")
+            .text("Unique lexical (3/6)");
+    </script>
+</body>
+</html>
